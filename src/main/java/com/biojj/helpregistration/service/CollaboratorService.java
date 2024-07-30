@@ -1,74 +1,84 @@
 package com.biojj.helpregistration.service;
 
+import com.biojj.helpregistration.domain.Collaborator;
+import com.biojj.helpregistration.domain.User;
+import com.biojj.helpregistration.domain.dtos.CollaboratorDTO;
 import com.biojj.helpregistration.repositories.CollaboratorRepository;
 import com.biojj.helpregistration.repositories.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.biojj.helpregistration.service.exception.DataIntegrityViolationException;
+import com.biojj.helpregistration.service.exception.ObjectNotFoundException;
+import jakarta.validation.Valid;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+
 @Service
-public class UserService {
+public class CollaboratorService {
 
-    @Autowired
-    private UserRepository userRepository;
+    private final CollaboratorRepository repository;
 
-    @Autowired
-    private CollaboratorRepository collaboratorRepository;
+    private final UserRepository userRepository;
 
-    @Autowired
-    private BCryptPasswordEncoder encoder;
+    private final BCryptPasswordEncoder encoder;
 
-    public Cliente findById(Integer id){
-        Optional<Cliente> obj = repository.findById(id);
+    public CollaboratorService(CollaboratorRepository repository, UserRepository userRepository, BCryptPasswordEncoder encoder) {
+        this.repository = repository;
+        this.userRepository = userRepository;
+        this.encoder = encoder;
+    }
+
+    public Collaborator findById(Integer id){
+        Optional<Collaborator> obj = repository.findById(id);
         return obj.orElseThrow(() -> new ObjectNotFoundException("Objeto não encontrado! id: "+ id));
     }
 
-    public List<Cliente> findAll(){
+    public List<Collaborator> findAll(){
         return repository.findAll();
     }
 
-    public Cliente create(ClienteDTO objDTO){
+    public Collaborator create(CollaboratorDTO objDTO){
 
         objDTO.setId(null);
         validaCpfEmail(objDTO);
 
-        objDTO.setId(null);
-        validaCpfEmail(objDTO);
-        objDTO.setSenha(encoder.encode(objDTO.getSenha()));
+        objDTO.setPassword(encoder.encode(objDTO.getPassword()));
 
-        Cliente obj = new Cliente(objDTO);
+        Collaborator obj = new Collaborator(objDTO);
         return repository.save(obj);
     }
 
-    private void validaCpfEmail(ClienteDTO objDTO) {
-        Optional<Pessoa> obj = pessoaRepository.findByCpf(objDTO.getCpf());
+    private void validaCpfEmail(CollaboratorDTO objDTO) {
+        Optional<User> obj = userRepository.findByCpf(objDTO.getCpf());
 
-        if(obj.isPresent() && obj.get().getId() != objDTO.getId()) {
+        if(obj.isPresent() && !Objects.equals(obj.get().getId(), objDTO.getId())) {
             throw new DataIntegrityViolationException("CPF já cadastrado");
         }
 
-        obj = pessoaRepository.findByEmail(objDTO.getEmail());
-        if(obj.isPresent() && obj.get().getId() != objDTO.getId()) {
+        obj = userRepository.findByEmail(objDTO.getEmail());
+        if(obj.isPresent() && !Objects.equals(obj.get().getId(), objDTO.getId())) {
             throw new DataIntegrityViolationException("Email já cadastrado");
         }
     }
 
-    public Cliente update(Integer id, @Valid ClienteDTO objDTO) {
+    public Collaborator update(Integer id, @Valid CollaboratorDTO objDTO) {
         objDTO.setId(id);
-        Cliente oldObj = findById(id);
+        Collaborator oldObj = findById(id);
         validaCpfEmail(objDTO);
 
 
-        objDTO.setSenha(encoder.encode(objDTO.getSenha()));
+        objDTO.setPassword(encoder.encode(objDTO.getPassword()));
 
-        oldObj = new Cliente(objDTO);
+        oldObj = new Collaborator(objDTO);
         return repository.save(oldObj);
     }
 
     public void delete(Integer id) {
-        Cliente obj = findById(id);
-        if(obj.getChamados().size() > 0) {
-            throw new DataIntegrityViolationException("Cliente possui ordens de serviços e não pode ser deletado");
+        Collaborator obj = findById(id);
+        if(!obj.getActivities().isEmpty()) {
+            throw new DataIntegrityViolationException("Colaborador possui Atividades e não pode ser deletado");
         }
         repository.deleteById(id);
 
