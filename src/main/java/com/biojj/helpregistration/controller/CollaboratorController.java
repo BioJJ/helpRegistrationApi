@@ -54,4 +54,11 @@ public class CollaboratorController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping(value = "/register")
+    public ResponseEntity<CollaboratorDTO> register(@Valid @RequestBody CollaboratorDTO objDTO) {
+        Collaborator obj = service.create(objDTO);
+        URI uri = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(obj.getId()).toUri();
+        return ResponseEntity.created(uri).build();
+    }
+
 }

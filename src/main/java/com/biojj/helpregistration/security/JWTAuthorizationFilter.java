@@ -12,6 +12,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
 
 import java.io.IOException;
+import java.util.Objects;
 
 
 public class JWTAuthorizationFilter extends BasicAuthenticationFilter {
@@ -56,11 +57,16 @@ public class JWTAuthorizationFilter extends BasicAuthenticationFilter {
     }
 
     private UsernamePasswordAuthenticationToken getAuthentication(String token) {
-        if (jwtUtil.validaTokenJWT(token) != null) {
-            String username = jwtUtil.validaTokenJWT(token);
-            UserDetails details = detailsService.loadUserByUsername(username);
-            return new UsernamePasswordAuthenticationToken(details.getUsername(), null, details.getAuthorities());
+
+    if (!Objects.equals(token, "null")) {
+
+            if (jwtUtil.validaTokenJWT(token) != null) {
+                String username = jwtUtil.validaTokenJWT(token);
+                UserDetails details = detailsService.loadUserByUsername(username);
+                return new UsernamePasswordAuthenticationToken(details.getUsername(), null, details.getAuthorities());
+            }
         }
+
         return null;
     }
 }
